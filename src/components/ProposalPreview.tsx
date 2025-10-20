@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileDown, Mail, Link2, Sparkles } from "lucide-react";
 import { ProposalData } from "./ProposalForm";
+import { useToast } from "@/hooks/use-toast";
+import html2pdf from "html2pdf.js";
 
 interface ProposalPreviewProps {
   proposalData: ProposalData;
@@ -15,6 +17,7 @@ interface ProposalPreviewProps {
 }
 
 const ProposalPreview = ({ proposalData, generatedContent, emotionalScore }: ProposalPreviewProps) => {
+  const { toast } = useToast();
   const overallScore = Math.round(
     (emotionalScore.warmth + emotionalScore.clarity + emotionalScore.confidence) / 3
   );
@@ -23,6 +26,59 @@ const ProposalPreview = ({ proposalData, generatedContent, emotionalScore }: Pro
     if (score >= 80) return "text-success";
     if (score >= 60) return "text-accent";
     return "text-muted-foreground";
+  };
+
+  const handleExportPDF = async () => {
+    const element = document.getElementById('proposal-content');
+    const opt = {
+      margin: 1,
+      filename: `proposal-${proposalData.clientName.replace(/\s+/g, '-')}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
+    };
+
+    try {
+      await html2pdf().set(opt).from(element).save();
+      toast({
+        title: "PDF Downloaded! 📄",
+        description: "Your proposal has been exported successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting your proposal.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendEmail = () => {
+    const subject = `Proposal for ${proposalData.clientName}`;
+    const body = `Hi,\n\nPlease find my proposal below:\n\n${generatedContent}\n\nBest regards`;
+    const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    window.location.href = mailtoLink;
+    toast({
+      title: "Opening Email Client 📧",
+      description: "Your default email app will open with the proposal.",
+    });
+  };
+
+  const handleShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link Copied! 🔗",
+        description: "The proposal link has been copied to your clipboard.",
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Unable to copy link. Please copy the URL manually.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -61,7 +117,7 @@ const ProposalPreview = ({ proposalData, generatedContent, emotionalScore }: Pro
       </Card>
 
       {/* Proposal Content Preview */}
-      <Card className="p-8 bg-card shadow-soft">
+      <Card id="proposal-content" className="p-8 bg-card shadow-soft">
         <div className="prose prose-slate max-w-none">
           <div className="mb-6 pb-6 border-b border-border">
             <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -79,15 +135,15 @@ const ProposalPreview = ({ proposalData, generatedContent, emotionalScore }: Pro
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3">
-        <Button variant="hero" size="lg" className="flex-1">
+        <Button variant="hero" size="lg" className="flex-1" onClick={handleExportPDF}>
           <FileDown className="mr-2 h-4 w-4" />
           Export as PDF
         </Button>
-        <Button variant="accent" size="lg" className="flex-1">
+        <Button variant="accent" size="lg" className="flex-1" onClick={handleSendEmail}>
           <Mail className="mr-2 h-4 w-4" />
           Send via Email
         </Button>
-        <Button variant="outline" size="lg">
+        <Button variant="outline" size="lg" onClick={handleShareLink}>
           <Link2 className="mr-2 h-4 w-4" />
           Share Link
         </Button>
