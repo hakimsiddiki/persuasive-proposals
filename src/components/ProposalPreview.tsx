@@ -5,7 +5,6 @@ import { FileDown, Mail, Link2, Sparkles } from "lucide-react";
 import { ProposalData } from "./ProposalForm";
 import { useToast } from "@/hooks/use-toast";
 import html2pdf from "html2pdf.js";
-import PricingTable from "./PricingTable";
 
 interface ProposalPreviewProps {
   proposalData: ProposalData;
@@ -133,32 +132,6 @@ const ProposalPreview = ({ proposalData, generatedContent, emotionalScore }: Pro
           </div>
         </div>
       </Card>
-
-      {/* Pricing Table */}
-      <PricingTable 
-        items={[
-          {
-            service: "Discovery & Strategy",
-            description: "Comprehensive research and planning phase",
-            costUSD: 2000
-          },
-          {
-            service: "Design & Development",
-            description: "Custom-designed deliverables and implementation",
-            costUSD: 5000
-          },
-          {
-            service: "Testing & Launch",
-            description: "Quality assurance and deployment support",
-            costUSD: 1500
-          },
-          {
-            service: "Post-Launch Support",
-            description: "30 days of dedicated support and optimization",
-            costUSD: 1000
-          }
-        ]}
-      />
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3">
