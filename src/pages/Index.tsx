@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Sparkles, Zap, Heart, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Sparkles, Zap, Heart, TrendingUp, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ProposalForm, { ProposalData } from "@/components/ProposalForm";
@@ -17,6 +19,32 @@ const Index = () => {
     clarity: 0,
     confidence: 0,
   });
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check authentication status
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoading(false);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Logged out successfully");
+    navigate("/auth");
+  };
 
   const generateProposal = async (data: ProposalData) => {
     setProposalData(data);
@@ -107,8 +135,27 @@ Your Partner in Success`;
     setEmotionalScore({ warmth: 0, clarity: 0, confidence: 0 });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Sparkles className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Logout Button - Fixed Position */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+      </div>
+
       {/* Hero Section */}
       <div
         className="relative bg-cover bg-center py-20 px-6"
