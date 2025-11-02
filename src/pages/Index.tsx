@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Sparkles, Zap, Heart, TrendingUp, Crown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, Zap, Heart, TrendingUp, Crown, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 import ProposalForm, { ProposalData } from "@/components/ProposalForm";
 import ProposalPreview from "@/components/ProposalPreview";
 import ProgressTracker from "@/components/ProgressTracker";
@@ -10,6 +12,7 @@ import heroBackground from "@/assets/hero-background.jpg";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [proposalData, setProposalData] = useState<ProposalData | null>(null);
@@ -20,6 +23,21 @@ const Index = () => {
     confidence: 0,
   });
 
+  useEffect(() => {
+    // Check auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const generateProposal = async (data: ProposalData) => {
     setProposalData(data);
     setIsGenerating(true);
@@ -28,7 +46,7 @@ const Index = () => {
     toast.loading("✨ Crafting your winning proposal...", { id: "generating" });
 
     // Simulate AI generation
-    setTimeout(() => {
+    setTimeout(async () => {
       const mockProposal = generateMockProposal(data);
       const mockScores = {
         warmth: Math.floor(Math.random() * 20) + 80,
@@ -40,6 +58,25 @@ const Index = () => {
       setEmotionalScore(mockScores);
       setIsGenerating(false);
       setCurrentStep(3);
+
+      // Save to database if user is logged in
+      if (user) {
+        try {
+          await supabase.from('proposals').insert({
+            user_id: user.id,
+            client_name: data.clientName,
+            project_type: data.projectType,
+            project_description: data.projectDescription,
+            industry: data.industry,
+            tone: data.tone,
+            budget: data.budget,
+            generated_content: mockProposal,
+            emotional_score: mockScores,
+          });
+        } catch (error) {
+          console.error('Error saving proposal:', error);
+        }
+      }
 
       toast.success("🎉 Your proposal is ready!", { id: "generating" });
     }, 2500);
@@ -112,15 +149,33 @@ Your Partner in Success`;
   return (
     <div className="min-h-screen bg-background">
       {/* Header Navigation */}
-      <div className="absolute top-0 right-0 p-6 z-10">
+      <div className="absolute top-0 right-0 p-6 z-10 flex gap-2">
         <Button 
           variant="outline" 
           onClick={() => navigate("/pricing")}
           className="bg-background/80 backdrop-blur-sm"
         >
           <Crown className="h-4 w-4 mr-2" />
-          View Premium Plans
+          Pricing
         </Button>
+        {user ? (
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/dashboard")}
+            className="bg-background/80 backdrop-blur-sm"
+          >
+            <User className="h-4 w-4 mr-2" />
+            Dashboard
+          </Button>
+        ) : (
+          <Button 
+            variant="default" 
+            onClick={() => navigate("/auth")}
+            className="bg-primary/90 backdrop-blur-sm"
+          >
+            Login / Sign Up
+          </Button>
+        )}
       </div>
 
       {/* Hero Section */}
