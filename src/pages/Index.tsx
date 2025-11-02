@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Sparkles, Zap, Heart, TrendingUp } from "lucide-react";
+import { Sparkles, Zap, Heart, TrendingUp, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import ProposalForm, { ProposalData } from "@/components/ProposalForm";
 import ProposalPreview from "@/components/ProposalPreview";
 import ProgressTracker from "@/components/ProgressTracker";
 import heroBackground from "@/assets/hero-background.jpg";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [proposalData, setProposalData] = useState<ProposalData | null>(null);
@@ -109,6 +111,17 @@ Your Partner in Success`;
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header Navigation */}
+      <div className="absolute top-0 right-0 p-6 z-10">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate("/pricing")}
+          className="bg-background/80 backdrop-blur-sm"
+        >
+          <Crown className="h-4 w-4 mr-2" />
+          View Premium Plans
+        </Button>
+      </div>
 
       {/* Hero Section */}
       <div
@@ -203,7 +216,7 @@ Your Partner in Success`;
 
       {/* Footer CTA */}
       <div className="bg-gradient-hero text-primary-foreground py-12 px-6 mt-20">
-        <div className="max-w-4xl mx-auto text-center space-y-4">
+        <div className="max-w-4xl mx-auto text-center space-y-6">
           <h3 className="text-2xl font-bold">Ready to Win More Clients?</h3>
           <p className="text-primary-foreground/90">
             Join thousands of freelancers and agencies using Proposal Genie to close more deals
@@ -211,6 +224,15 @@ Your Partner in Success`;
           <p className="text-sm text-primary-foreground/80">
             🎁 Get 3 free proposals per month • ✨ Upgrade anytime for unlimited access
           </p>
+          <Button 
+            size="lg"
+            variant="secondary"
+            onClick={() => navigate("/pricing")}
+            className="mt-4"
+          >
+            <Crown className="h-5 w-5 mr-2" />
+            View Premium Plans
+          </Button>
         </div>
       </div>
     </div>
