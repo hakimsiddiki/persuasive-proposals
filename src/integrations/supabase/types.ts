@@ -86,12 +86,49 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          paypal_subscription_id: string | null
+          plan_id: string
+          plan_name: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          paypal_subscription_id?: string | null
+          plan_id: string
+          plan_name: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          paypal_subscription_id?: string | null
+          plan_id?: string
+          plan_name?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_create_proposal: { Args: { user_id_param: string }; Returns: boolean }
+      get_monthly_proposal_count: {
+        Args: { user_id_param: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,51 +1,102 @@
-import { useEffect } from "react";
-import { CheckCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+  const [processing, setProcessing] = useState(true);
+  const orderId = searchParams.get("token");
+  const planId = searchParams.get("plan_id");
+  const planName = searchParams.get("plan_name");
 
   useEffect(() => {
-    // You can capture the order here if needed
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    console.log('Payment token:', token);
-  }, []);
+    const processPayment = async () => {
+      if (!orderId || !planId || !planName) {
+        toast({
+          title: "Error",
+          description: "Missing payment information",
+          variant: "destructive",
+        });
+        setProcessing(false);
+        return;
+      }
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast({
+            title: "Error",
+            description: "User not found",
+            variant: "destructive",
+          });
+          navigate("/auth");
+          return;
+        }
+
+        // Call webhook to process payment
+        const { error } = await supabase.functions.invoke('paypal-webhook', {
+          body: {
+            orderId,
+            userId: user.id,
+            planId,
+            planName,
+          }
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Success!",
+          description: "Your subscription has been activated",
+        });
+      } catch (error) {
+        console.error('Payment processing error:', error);
+        toast({
+          title: "Error",
+          description: "Failed to activate subscription",
+          variant: "destructive",
+        });
+      } finally {
+        setProcessing(false);
+      }
+    };
+
+    processPayment();
+  }, [orderId, planId, planName, toast, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center px-4">
-      <div className="max-w-md w-full text-center space-y-6">
-        <div className="flex justify-center">
-          <CheckCircle className="w-24 h-24 text-green-500" />
-        </div>
-        
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-          Payment Successful!
-        </h1>
-        
-        <p className="text-lg text-muted-foreground">
-          Thank you for upgrading to premium. Your account has been activated with all premium features.
-        </p>
-        
-        <div className="space-y-3">
+      <Card className="max-w-md w-full">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <CheckCircle className="w-16 h-16 text-green-500" />
+          </div>
+          <CardTitle className="text-3xl">Payment Successful!</CardTitle>
+          <CardDescription>
+            {processing ? "Processing your payment..." : "Your payment has been processed successfully"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-center text-muted-foreground">
+            {processing 
+              ? "Please wait while we activate your subscription..."
+              : "Thank you for upgrading! Your premium features are now active."}
+          </p>
           <Button 
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")} 
             className="w-full"
-            size="lg"
+            disabled={processing}
           >
-            Start Creating Proposals
+            {processing ? "Processing..." : "Go to Dashboard"}
           </Button>
-          
-          <Button 
-            onClick={() => navigate("/pricing")}
-            variant="outline"
-            className="w-full"
-          >
-            View Pricing
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

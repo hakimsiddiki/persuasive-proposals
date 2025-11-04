@@ -39,6 +39,31 @@ const Index = () => {
   }, []);
 
   const generateProposal = async (data: ProposalData) => {
+    // Check auth first
+    if (!user) {
+      toast.error("Please log in to generate proposals");
+      navigate("/auth");
+      return;
+    }
+
+    // Check if user can create proposal (monthly limit for free users)
+    try {
+      const { data: canCreate, error: limitError } = await supabase.rpc('can_create_proposal', {
+        user_id_param: user.id
+      });
+
+      if (limitError) {
+        console.error('Error checking proposal limit:', limitError);
+      }
+
+      if (!canCreate) {
+        toast.error("You've reached the 3 proposal limit for free users. Upgrade to Pro for unlimited proposals!");
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking limit:', error);
+    }
+
     setProposalData(data);
     setIsGenerating(true);
     setCurrentStep(2);

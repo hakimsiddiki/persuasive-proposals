@@ -23,6 +23,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [monthlyCount, setMonthlyCount] = useState<number>(0);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -70,6 +72,30 @@ const Dashboard = () => {
         console.error('Profile error:', profileError);
       } else {
         setProfile(profileData);
+      }
+
+      // Fetch subscription
+      const { data: subData, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (subError && subError.code !== 'PGRST116') {
+        console.error('Subscription error:', subError);
+      } else {
+        setSubscription(subData);
+      }
+
+      // Fetch monthly proposal count
+      const { data: countData, error: countError } = await supabase.rpc('get_monthly_proposal_count', {
+        user_id_param: userId
+      });
+
+      if (countError) {
+        console.error('Count error:', countError);
+      } else {
+        setMonthlyCount(countData || 0);
       }
 
       // Fetch proposals
@@ -168,7 +194,9 @@ const Dashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold">{proposals.length}</div>
               <p className="text-xs text-muted-foreground">
-                {proposals.length < 3 ? `${3 - proposals.length} remaining this month (Free)` : "Upgrade for unlimited"}
+                {subscription 
+                  ? "Unlimited this month" 
+                  : `${monthlyCount}/3 used this month`}
               </p>
             </CardContent>
           </Card>
@@ -203,14 +231,18 @@ const Dashboard = () => {
               <Crown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Free</div>
+              <div className="text-2xl font-bold">
+                {subscription ? subscription.plan_name : "Free"}
+              </div>
               <p className="text-xs text-muted-foreground">
-                <button
-                  onClick={() => navigate("/pricing")}
-                  className="text-primary hover:underline"
-                >
-                  Upgrade to Pro
-                </button>
+                {!subscription && (
+                  <button
+                    onClick={() => navigate("/pricing")}
+                    className="text-primary hover:underline"
+                  >
+                    Upgrade to Pro
+                  </button>
+                )}
               </p>
             </CardContent>
           </Card>

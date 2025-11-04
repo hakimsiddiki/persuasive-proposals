@@ -20,7 +20,13 @@ const Pricing = () => {
       if (error) throw error;
 
       if (data?.approvalUrl) {
-        window.location.href = data.approvalUrl;
+        // Add plan info to the return URL
+        const returnUrl = `${window.location.origin}/payment-success?plan_id=${plan}&plan_name=${encodeURIComponent(plan)}`;
+        const approvalUrlWithReturn = data.approvalUrl.replace(
+          /return_url=[^&]*/,
+          `return_url=${encodeURIComponent(returnUrl)}`
+        );
+        window.location.href = approvalUrlWithReturn;
       }
     } catch (error) {
       console.error('Payment error:', error);
