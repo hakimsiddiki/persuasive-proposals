@@ -13,6 +13,7 @@ import heroBackground from "@/assets/hero-background.jpg";
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [userPlan, setUserPlan] = useState<string>("free");
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [proposalData, setProposalData] = useState<ProposalData | null>(null);
@@ -25,18 +26,39 @@ const Index = () => {
 
   useEffect(() => {
     // Check auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchUserPlan(session.user.id);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUserPlan(session.user.id);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserPlan = async (userId: string) => {
+    try {
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('plan_id')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
+      
+      setUserPlan(subscription?.plan_id || 'free');
+    } catch (error) {
+      setUserPlan('free');
+    }
+  };
 
   const generateProposal = async (data: ProposalData) => {
     // Check auth first
@@ -73,11 +95,19 @@ const Index = () => {
     // Simulate AI generation
     setTimeout(async () => {
       const mockProposal = generateMockProposal(data);
-      const mockScores = {
-        warmth: Math.floor(Math.random() * 20) + 80,
-        clarity: Math.floor(Math.random() * 20) + 75,
-        confidence: Math.floor(Math.random() * 20) + 85,
-      };
+      
+      // Generate emotional scores based on plan
+      const mockScores = userPlan === 'free' 
+        ? {
+            warmth: Math.floor(Math.random() * 15) + 70,  // Basic analysis: 70-85
+            clarity: Math.floor(Math.random() * 15) + 70,
+            confidence: Math.floor(Math.random() * 15) + 70,
+          }
+        : {
+            warmth: Math.floor(Math.random() * 15) + 85,  // Advanced analysis: 85-100
+            clarity: Math.floor(Math.random() * 15) + 85,
+            confidence: Math.floor(Math.random() * 15) + 85,
+          };
 
       setGeneratedContent(mockProposal);
       setEmotionalScore(mockScores);
@@ -284,6 +314,7 @@ Your Partner in Success`;
               proposalData={proposalData}
               generatedContent={generatedContent}
               emotionalScore={emotionalScore}
+              userPlan={userPlan}
             />
             <div className="flex justify-center pt-6">
               <Button variant="outline" size="lg" onClick={startOver}>

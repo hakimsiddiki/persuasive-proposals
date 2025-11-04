@@ -14,9 +14,10 @@ interface ProposalPreviewProps {
     clarity: number;
     confidence: number;
   };
+  userPlan: string;
 }
 
-const ProposalPreview = ({ proposalData, generatedContent, emotionalScore }: ProposalPreviewProps) => {
+const ProposalPreview = ({ proposalData, generatedContent, emotionalScore, userPlan }: ProposalPreviewProps) => {
   const { toast } = useToast();
   const overallScore = Math.round(
     (emotionalScore.warmth + emotionalScore.clarity + emotionalScore.confidence) / 3
@@ -134,19 +135,38 @@ const ProposalPreview = ({ proposalData, generatedContent, emotionalScore }: Pro
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <Button variant="hero" size="lg" className="flex-1" onClick={handleExportPDF}>
-          <FileDown className="mr-2 h-4 w-4" />
-          Export as PDF
-        </Button>
-        <Button variant="accent" size="lg" className="flex-1" onClick={handleSendEmail}>
-          <Mail className="mr-2 h-4 w-4" />
-          Send via Email
-        </Button>
-        <Button variant="outline" size="lg" onClick={handleShareLink}>
-          <Link2 className="mr-2 h-4 w-4" />
-          Share Link
-        </Button>
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-3">
+          <Button variant="hero" size="lg" className="flex-1" onClick={handleExportPDF}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export as PDF
+          </Button>
+          <Button variant="accent" size="lg" className="flex-1" onClick={handleSendEmail}>
+            <Mail className="mr-2 h-4 w-4" />
+            Send via Email
+          </Button>
+          <Button variant="outline" size="lg" onClick={handleShareLink}>
+            <Link2 className="mr-2 h-4 w-4" />
+            Share Link
+          </Button>
+        </div>
+        
+        {userPlan === 'free' && (
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <p className="text-sm text-center">
+              <span className="font-semibold">Upgrade to Pro</span> to unlock multi-format exports (DOCX, HTML), custom branding, and advanced emotional analysis!
+            </p>
+          </Card>
+        )}
+        
+        {userPlan !== 'free' && (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Badge variant="secondary" className="font-normal">
+              {userPlan === 'pro' ? '✨ Pro Features Active' : '👑 Enterprise Features Active'}
+            </Badge>
+            <span>• Multi-format exports • {userPlan === 'enterprise' && 'Team collaboration • '}Advanced analysis</span>
+          </div>
+        )}
       </div>
     </div>
   );
